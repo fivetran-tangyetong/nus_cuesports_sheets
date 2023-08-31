@@ -15,18 +15,25 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 # The ID and range of a master tracking spreadsheet.
 SPREADSHEET_ID = '1Wvk4UGKgiT_UACsgzUSepydVA7GgO5FbqtsL9p3qM-4'
 
-# [[Date]]
-MEMBER_TRACKING_SHEET_DATE_RANGE = 'Sem 1!E2:AF2'
-# [[Full Name, Telegram Display name, Telegram Handle]]
-MEMBER_TRACKING_SHEET_NAME_RANGE = 'Sem 1!A19:C'
+SPREADSHEET_NAME = 'Sem 1'
+SPREADSHEET_DATA_START = '19'
+SPREADSHEET_TELEGRAM = 'C'
 
 # [[Date]]
-MEMBER_ATTENDANCE_SHEET_DATE_RANGE = 'Aug 23!F8:K8'
-# [[Full Name, Telegram Handle]]
-MEMBER_ATTENDANCE_SHEET_NAME_RANGE = 'Aug 23!B10:C121'
+MEMBER_TRACKING_SHEET_DATE_RANGE = SPREADSHEET_NAME + '!E2:AF2'
+# [[Full Name, Telegram Display name, Telegram Handle]]
+MEMBER_TRACKING_SHEET_NAME_RANGE = SPREADSHEET_NAME + '!A' + SPREADSHEET_DATA_START + ':' + SPREADSHEET_TELEGRAM
 
 TOKEN = 'token.json'
 CREDENTIALS = 'credentials.json'
+
+TELE_MON = 'Tele_Mon.txt'
+TELE_WED = 'Tele_Wed.txt'
+
+COMING = 'COMING'
+CASH = 'CASH'
+DISCOUNT = 'DISCOUNT'
+FREE = 'FREE'
 
 # day: 0 = Monday, 1 = Tuesday, 2 = Wednesday...
 def next_weekday(day):
@@ -56,6 +63,14 @@ def auth() -> Credentials:
     return creds
 
 
+def getComing(file) -> list:
+    contents = ""
+    with open(file, 'r') as f:
+        contents = f.readlines()
+        f.close()
+    
+    return contents.strip().split("\n")
+
 def parseColumnByDates(sheet, nextMon) -> (str, str):
     dates = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_DATE_RANGE).execute()
     dates_values = dates.get('values', [])[0]
@@ -73,8 +88,35 @@ def parseColumnByDates(sheet, nextMon) -> (str, str):
     print("Can't find next Monday! " + str(nextMon))
     quit()
 
+def updateMembers(sheet, coming_list, date_idx) -> None:
+    names = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_NAME_RANGE).execute()
+    names_values = names.get('values', [])
+    names_len = len(names)
 
-def getNamesOfComing(sheet, COMING_RANGE) -> list:
+    if not names_values:
+        print('Tracking Sheet Name Empty!')
+        quit()
+
+    telegram_values = (i[2] for i in names_values)
+    update_list = []
+
+    for coming_value in coming_list:
+        if coming_value in telegram_values:
+            member_idx = telegram_values.index(coming_value)
+            member_range = SPREADSHEET_ID + "!" + date_idx + (member_idx + SPREADSHEET_DATA_START) + ":" + date_idx + (member_idx + SPREADSHEET_DATA_START)
+            update_list.append({"range": + member_range, "values": [[COMING]]})
+        else:
+            member_tele_range = SPREADSHEET_ID + "!" + SPREADSHEET_TELEGRAM + (names_len + SPREADSHEET_DATA_START) + ":" + SPREADSHEET_TELEGRAM + (names_len + SPREADSHEET_DATA_START)
+            member_date_range = SPREADSHEET_ID + "!" + date_idx + (names_len + SPREADSHEET_DATA_START) + ":" + date_idx + (names_len + SPREADSHEET_DATA_START)
+            update_list.append({"range": + member_tele_range, "values": [[coming_value]]})
+            update_list.append({"range": + member_date_range, "values": [[COMING]]})
+
+            names_len += 1
+
+    sheet.batch_update(update_list)
+
+
+def checkAllMembers(sheet, coming_list, COMING_RANGE) -> None:
     coming = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=COMING_RANGE).execute()
     coming_values = coming.get('values', [])
 
@@ -83,106 +125,18 @@ def getNamesOfComing(sheet, COMING_RANGE) -> list:
         quit()
 
     coming_list = []
-    for (idx, paid_value) in enumerate(coming_values):
-        if len(paid_value) != 0:
-            coming_list.append(idx)
-    
-    return coming_list
+    for coming_value in coming_values:
+        if len(coming_value) != 0 and coming_value not in coming_list:
+            print(coming_value + " is COMING, but not in list!")
 
-
-def filterComing(sheet, coming_list) -> list:
-    names = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_NAME_RANGE).execute()
-    names_values = names.get('values', [])
-
-    if not names_values:
-        print('Tracking Sheet Name Empty!')
-        quit()
-
-    filtered_list = []
-    for (idx, names_value) in enumerate(names_values):
-        if idx in coming_list:
-            filtered_list.append(names_value)
-
-    return filtered_list
-
-
-def checkAttendanceSheet(sheet, day, coming_list) -> None:
-    trainingDates = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_ATTENDANCE_SHEET_DATE_RANGE).execute()
-    trainingDates_values = trainingDates.get('values', [])[0]
-
-    if not trainingDates_values:
-        print('Attendance Sheet Date!')
-        quit()
-
-    dateIdx = chr(trainingDates_values.index(day) + 5 + 65)
-
-    currAttendance = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_ATTENDANCE_SHEET_NAME_RANGE).execute()
-    currAttendance_values = currAttendance.get('values', [])
-
-    if not currAttendance_values:
-        print('Attendance Sheet Name!')
-        quit()
-        
-    currAttendance_telegram_values = []
-    currAttendance_telegram_values.append([i[1] for i in currAttendance_values])
-    currAttendance_telegram_values = currAttendance_telegram_values[0]
-
-    coming_telegram_values = []
-    coming_telegram_values.append([i[2] for i in coming_list])
-    coming_telegram_values = coming_telegram_values[0]
-
-    currAttendanceSize = len(currAttendance_telegram_values)
-
-    
-
-    for coming_telegram_value in coming_telegram_values:
-        # Add their name and telegram handle if not in attendance sheet
-        if coming_telegram_value not in currAttendance_telegram_values:
-            currAttendanceSize += 1
-            currAttendanceName = ""
-            for coming_list_value in coming_list:
-                if coming_telegram_value in coming_list_value:
-                    currAttendanceName = coming_list_value[0]
-            
-            new_attendance_range = 'Aug 23!A' + str(currAttendanceSize + 9)
-            new_attendance_row = [currAttendanceSize, currAttendanceName, coming_list_value]
-
-            new_attendance_request = {
-                "values": [new_attendance_row],
-            }
-
-            sheet.values().append(
-                spreadsheetId=SPREADSHEET_ID,
-                range=new_attendance_range,
-                body=new_attendance_request,
-                valueInputOption="RAW"
-            ).exeute()
-
-            print("Added " + coming_telegram_value + " at row " + str(coming_attendance_row))
-        
-        coming_attendance_row = currAttendance_telegram_values.index(coming_telegram_value) + 1 + 9
-        coming_attendance_range = 'Aug 23!' + dateIdx + str(coming_attendance_row)
-        coming_attendance_value = '0'
-
-        coming_attendance_update_values_request = {
-            "range": coming_attendance_range,
-            "majorDimension": "ROWS",
-            "values": [[coming_attendance_value]],
-        }
-
-        sheet.values().update(
-            spreadsheetId=SPREADSHEET_ID,
-            range=coming_attendance_range,
-            body=coming_attendance_update_values_request,
-            valueInputOption="RAW"
-        ).execute()
-
-        print("Updated " + coming_telegram_value + " at row " + str(coming_attendance_row))
 
 def main() -> None:
     creds = auth()
 
     nextMon = next_weekday(0)
+
+    coming_mon = getComing(TELE_MON)
+    coming_wed = getComing(TELE_MON)
 
     try:
         service = build('sheets', 'v4', credentials=creds)
@@ -190,18 +144,15 @@ def main() -> None:
         sheet = service.spreadsheets()
 
         (monIdx, wedIdx) = parseColumnByDates(sheet, nextMon)
+        
+        updateMembers(sheet, coming_mon, monIdx)
+        updateMembers(sheet, coming_wed, wedIdx)
 
-        MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = 'Sem 1!' + monIdx + '19:' + monIdx
-        MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = 'Sem 1!' + wedIdx + '19:' + wedIdx
+        MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = SPREADSHEET_NAME + '!' + monIdx + SPREADSHEET_DATA_START + ':' + monIdx
+        MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = SPREADSHEET_NAME + '!' + wedIdx + SPREADSHEET_DATA_START + ':' + wedIdx
 
-        monNames = getNamesOfComing(sheet, MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE)
-        wedNames = getNamesOfComing(sheet, MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE)
-
-        monNames_filtered = filterComing(sheet, monNames)
-        wedNames_filtered = filterComing(sheet, wedNames)
-
-        checkAttendanceSheet(sheet, str(nextMon.day), monNames_filtered)
-        checkAttendanceSheet(sheet, str(nextMon.day + 2), wedNames_filtered)
+        checkAllMembers(sheet, coming_mon, MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE)
+        checkAllMembers(sheet, coming_wed, MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE)        
 
     except HttpError as err:
         print(err)
