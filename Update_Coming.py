@@ -35,6 +35,9 @@ CASH = 'CASH'
 DISCOUNT = 'DISCOUNT'
 FREE = 'FREE'
 
+spreadsheet_dates = []
+spreadsheet_names = []
+
 # day: 0 = Monday, 1 = Tuesday, 2 = Wednesday...
 def next_weekday(day):
     currDate = datetime.date.today()
@@ -64,12 +67,17 @@ def auth() -> Credentials:
 
 
 def getComing(file) -> list:
-    contents = ""
+    contents = []
     with open(file, 'r') as f:
-        contents = f.readlines()
+        for line in f.readlines():
+            if ',' in line:
+                line_parsed = line.split(",")
+                contents.append([line_parsed[0].strip(), line_parsed[1].strip()])
+            else:
+                contents.append([line.strip(), COMING])        
         f.close()
     
-    return contents.strip().split("\n")
+    return contents
 
 def parseColumnByDates(sheet, nextMon) -> (str, str):
     dates = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_DATE_RANGE).execute()
@@ -88,46 +96,67 @@ def parseColumnByDates(sheet, nextMon) -> (str, str):
     print("Can't find next Monday! " + str(nextMon))
     quit()
 
+
 def updateMembers(sheet, coming_list, date_idx) -> None:
+    print("Updating Members Coming!")
     names = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_NAME_RANGE).execute()
     names_values = names.get('values', [])
-    names_len = len(names)
+    names_len = len(names_values)
 
     if not names_values:
         print('Tracking Sheet Name Empty!')
         quit()
 
-    telegram_values = (i[2] for i in names_values)
+    telegram_values = [i[2] for i in names_values]
     update_list = []
 
     for coming_value in coming_list:
-        if coming_value in telegram_values:
-            member_idx = telegram_values.index(coming_value)
-            member_range = SPREADSHEET_ID + "!" + date_idx + (member_idx + SPREADSHEET_DATA_START) + ":" + date_idx + (member_idx + SPREADSHEET_DATA_START)
-            update_list.append({"range": + member_range, "values": [[COMING]]})
+        if coming_value[0] in telegram_values:
+            member_idx = str(telegram_values.index(coming_value[0]) + int(SPREADSHEET_DATA_START))
+            member_date_range = SPREADSHEET_NAME + "!" + date_idx + member_idx + ":" + date_idx + member_idx
+            update_list.append({"range": member_date_range, "values": [[coming_value[1]]]})
         else:
-            member_tele_range = SPREADSHEET_ID + "!" + SPREADSHEET_TELEGRAM + (names_len + SPREADSHEET_DATA_START) + ":" + SPREADSHEET_TELEGRAM + (names_len + SPREADSHEET_DATA_START)
-            member_date_range = SPREADSHEET_ID + "!" + date_idx + (names_len + SPREADSHEET_DATA_START) + ":" + date_idx + (names_len + SPREADSHEET_DATA_START)
-            update_list.append({"range": + member_tele_range, "values": [[coming_value]]})
-            update_list.append({"range": + member_date_range, "values": [[COMING]]})
+            member_idx = str(names_len + int(SPREADSHEET_DATA_START))
+            member_tele_range = SPREADSHEET_NAME + "!" + SPREADSHEET_TELEGRAM + member_idx + ":" + SPREADSHEET_TELEGRAM + member_idx
+            member_date_range = SPREADSHEET_NAME + "!" + date_idx + member_idx + ":" + date_idx + member_idx
+            update_list.append({"range": member_tele_range, "values": [[coming_value[0]]]})
+            update_list.append({"range": member_date_range, "values": [[coming_value[1]]]})
 
             names_len += 1
+            
+    update_values_request = {
+        "valueInputOption": "USER_ENTERED",
+        "data": update_list,
+    }
 
-    sheet.batch_update(update_list)
+    sheet.values().batchUpdate(
+        spreadsheetId=SPREADSHEET_ID,
+        body=update_values_request,
+    ).execute()
 
 
 def checkAllMembers(sheet, coming_list, COMING_RANGE) -> None:
+    print("Checking All Members if Coming!")
     coming = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=COMING_RANGE).execute()
     coming_values = coming.get('values', [])
+    
+    names = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_NAME_RANGE).execute()
+    names_values = names.get('values', [])
 
     if not coming_values:
         print('No data found for those who PAID!')
         quit()
+        
+    if not names_values:
+        print('Tracking Sheet Name Empty!')
+        quit()
 
-    coming_list = []
-    for coming_value in coming_values:
-        if len(coming_value) != 0 and coming_value not in coming_list:
-            print(coming_value + " is COMING, but not in list!")
+    telegram_values = [i[2] for i in names_values]
+    coming_list_names = [i[0] for i in coming_list]
+
+    for (idx, coming_value) in enumerate(coming_values):
+        if len(coming_value) != 0 and telegram_values[idx] not in coming_list_names:
+            print(telegram_values[idx] + " is COMING, but not in list!")
 
 
 def main() -> None:
@@ -136,7 +165,7 @@ def main() -> None:
     nextMon = next_weekday(0)
 
     coming_mon = getComing(TELE_MON)
-    coming_wed = getComing(TELE_MON)
+    coming_wed = getComing(TELE_WED)
 
     try:
         service = build('sheets', 'v4', credentials=creds)
@@ -156,6 +185,8 @@ def main() -> None:
 
     except HttpError as err:
         print(err)
+        
+    print("Finished! Cleaning up...")
 
 
 if __name__ == '__main__':
