@@ -20,85 +20,13 @@ MEMBER_TRACKING_SHEET_DATE_RANGE = 'Sem 1!E2:AF2'
 # [[Full Name, Telegram Display name, Telegram Handle]]
 MEMBER_TRACKING_SHEET_NAME_RANGE = 'Sem 1!A19:C'
 
+# [[Date]]
+MEMBER_ATTENDANCE_SHEET_DATE_RANGE = 'Aug 23!F8:K8'
+# [[Full Name, Telegram Handle]]
+MEMBER_ATTENDANCE_SHEET_NAME_RANGE = 'Aug 23!B10:C121'
+
 TOKEN = 'token.json'
 CREDENTIALS = 'credentials.json'
-
-COMING_MON = """@glooop
-@qingkhang
-@beeeeteee
-@TheNoDeath
-@olesia_bilyk
-@elloooot
-@jonasgng
-@Petrinaaaaaa
-@cy7_wee
-@j_nwei
-@SzePerng
-@skdgsg
-@zzhenjie
-@ilovekayat0ast
-@Godslayer26
-@tisshoe    
-@hogleon
-@Zhang_Jink
-@danailboi
-@AtdeeSwagg
-@vimuthm
-@rei_charl
-@jon_nus
-@wonnkye
-@GanKX18
-@LKI13
-@SolitudeSloth
-@richiehx
-@khookhoo_bird
-@thisisivan
-@darrenlzr
-@bloopsi69
-@jjessycac
-@WesleyOng950
-@shirapthik
-@andrewyu02
-"""
-
-COMING_WED = """
-@DGA76218922
-@vazz_z
-@eliotps
-@bing_feng
-@cy7_wee
-@AkoPoSiDavid
-@QIU_QH
-@JoshuaTanJiaXin
-@surr_eal
-@Jjjy123456789, FREE
-@Foodiemunch
-@ruoyee19
-@zandrealau
-@Angzt2001
-@B0bobee
-@willietayhh
-@gen_e
-@tzhenyao1
-@linhns
-@GiggsLoh
-@yuh727
-@AtdeeSwagg
-@braybes
-@bowlofsoup
-@rei_charl
-@KrashKart1
-@soloplxya, FREE
-@SolitudeSloth
-@Brendanng7
-@shanrennn
-@martarozycka, CASH
-@weiyiiiiiiii
-@UlvisT
-@junwwei
-@jarrellkoo02
-@JonathanChee27
-"""
 
 # day: 0 = Monday, 1 = Tuesday, 2 = Wednesday...
 def next_weekday(day):
