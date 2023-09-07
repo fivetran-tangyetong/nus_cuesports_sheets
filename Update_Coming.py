@@ -9,31 +9,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
-# The ID and range of a master tracking spreadsheet.
-SPREADSHEET_ID = '1Wvk4UGKgiT_UACsgzUSepydVA7GgO5FbqtsL9p3qM-4'
-
-SPREADSHEET_NAME = 'Sem 1'
-SPREADSHEET_DATA_START = '19'
-SPREADSHEET_TELEGRAM = 'C'
-
-# [[Date]]
-MEMBER_TRACKING_SHEET_DATE_RANGE = SPREADSHEET_NAME + '!E2:AF2'
-# [[Full Name, Telegram Display name, Telegram Handle]]
-MEMBER_TRACKING_SHEET_NAME_RANGE = SPREADSHEET_NAME + '!A' + SPREADSHEET_DATA_START + ':' + SPREADSHEET_TELEGRAM
-
-TOKEN = 'token.json'
-CREDENTIALS = 'credentials.json'
-
-TELE_MON = 'Tele_Mon.txt'
-TELE_WED = 'Tele_Wed.txt'
-
-COMING = 'COMING'
-CASH = 'CASH'
-DISCOUNT = 'DISCOUNT'
-FREE = 'FREE'
+import Constants
 
 spreadsheet_dates = []
 spreadsheet_names = []
@@ -50,17 +26,17 @@ def auth() -> Credentials:
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists(TOKEN):
-        creds = Credentials.from_authorized_user_file(TOKEN, SCOPES)
+    if os.path.exists(Constants.TOKEN):
+        creds = Credentials.from_authorized_user_file(Constants.TOKEN, Constants.SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS, SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(Constants.CREDENTIALS, Constants.SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open(TOKEN, 'w') as token:
+        with open(Constants.TOKEN, 'w') as token:
             token.write(creds.to_json())
     
     return creds
@@ -74,13 +50,13 @@ def getComing(file) -> list:
                 line_parsed = line.split(",")
                 contents.append([line_parsed[0].strip(), line_parsed[1].strip()])
             else:
-                contents.append([line.strip(), COMING])        
+                contents.append([line.strip(), Constants.COMING])        
         f.close()
     
     return contents
 
 def parseColumnByDates(sheet, nextMon) -> (str, str):
-    dates = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_DATE_RANGE).execute()
+    dates = sheet.values().get(spreadsheetId=Constants.SPREADSHEET_ID_MASTER, range=Constants.MASTER_DATE_RANGE).execute()
     dates_values = dates.get('values', [])[0]
 
     if not dates_values:
@@ -91,7 +67,7 @@ def parseColumnByDates(sheet, nextMon) -> (str, str):
         if datetime.datetime.strptime(date, "%d/%m/%Y") == nextMon:
             # + 4 because started from 4th index onwards (Counting from E)
             # + 65 to return capital letter
-            return (chr(idx + 4 + 65), chr(idx + 1 + 4 + 65))
+            return (chr(idx + Constants.MASTER_DATE_START + 65), chr(idx + 1 + Constants.MASTER_DATE_START + 65))
         
     print("Can't find next Monday! " + str(nextMon))
     quit()
@@ -99,7 +75,7 @@ def parseColumnByDates(sheet, nextMon) -> (str, str):
 
 def updateMembers(sheet, coming_list, date_idx) -> None:
     print("Updating Members Coming!")
-    names = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_NAME_RANGE).execute()
+    names = sheet.values().get(spreadsheetId=Constants.SPREADSHEET_ID_MASTER, range=Constants.MASTER_NAME_RANGE).execute()
     names_values = names.get('values', [])
     names_len = len(names_values)
 
@@ -107,18 +83,18 @@ def updateMembers(sheet, coming_list, date_idx) -> None:
         print('Tracking Sheet Name Empty!')
         quit()
 
-    telegram_values = [i[2] for i in names_values]
+    telegram_values = [i[Constants.MASTER_ID_TELE_LIST] for i in names_values]
     update_list = []
 
     for coming_value in coming_list:
         if coming_value[0] in telegram_values:
-            member_idx = str(telegram_values.index(coming_value[0]) + int(SPREADSHEET_DATA_START))
-            member_date_range = SPREADSHEET_NAME + "!" + date_idx + member_idx + ":" + date_idx + member_idx
+            member_idx = str(telegram_values.index(coming_value[0]) + int(Constants.MASTER_DATA_START))
+            member_date_range = Constants.MASTER_SHEET_NAME + "!" + date_idx + member_idx + ":" + date_idx + member_idx
             update_list.append({"range": member_date_range, "values": [[coming_value[1]]]})
         else:
-            member_idx = str(names_len + int(SPREADSHEET_DATA_START))
-            member_tele_range = SPREADSHEET_NAME + "!" + SPREADSHEET_TELEGRAM + member_idx + ":" + SPREADSHEET_TELEGRAM + member_idx
-            member_date_range = SPREADSHEET_NAME + "!" + date_idx + member_idx + ":" + date_idx + member_idx
+            member_idx = str(names_len + int(Constants.MASTER_DATA_START))
+            member_tele_range = Constants.MASTER_SHEET_NAME + "!" + Constants.MASTER_ID_TELE + member_idx + ":" + Constants.MASTER_ID_TELE + member_idx
+            member_date_range = Constants.MASTER_SHEET_NAME + "!" + date_idx + member_idx + ":" + date_idx + member_idx
             update_list.append({"range": member_tele_range, "values": [[coming_value[0]]]})
             update_list.append({"range": member_date_range, "values": [[coming_value[1]]]})
 
@@ -130,17 +106,17 @@ def updateMembers(sheet, coming_list, date_idx) -> None:
     }
 
     sheet.values().batchUpdate(
-        spreadsheetId=SPREADSHEET_ID,
+        spreadsheetId=Constants.SPREADSHEET_ID_MASTER,
         body=update_values_request,
     ).execute()
 
 
 def checkAllMembers(sheet, coming_list, COMING_RANGE) -> None:
     print("Checking All Members if Coming!")
-    coming = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=COMING_RANGE).execute()
+    coming = sheet.values().get(spreadsheetId=Constants.SPREADSHEET_ID_MASTER, range=COMING_RANGE).execute()
     coming_values = coming.get('values', [])
     
-    names = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=MEMBER_TRACKING_SHEET_NAME_RANGE).execute()
+    names = sheet.values().get(spreadsheetId=Constants.SPREADSHEET_ID_MASTER, range=Constants.MASTER_NAME_RANGE).execute()
     names_values = names.get('values', [])
 
     if not coming_values:
@@ -151,7 +127,7 @@ def checkAllMembers(sheet, coming_list, COMING_RANGE) -> None:
         print('Tracking Sheet Name Empty!')
         quit()
 
-    telegram_values = [i[2] for i in names_values]
+    telegram_values = [i[Constants.MASTER_ID_TELE_LIST] for i in names_values]
     coming_list_names = [i[0] for i in coming_list]
 
     for (idx, coming_value) in enumerate(coming_values):
@@ -164,8 +140,8 @@ def main() -> None:
 
     nextMon = next_weekday(0)
 
-    coming_mon = getComing(TELE_MON)
-    coming_wed = getComing(TELE_WED)
+    coming_mon = getComing(Constants.TELE_MON)
+    coming_wed = getComing(Constants.TELE_WED)
 
     try:
         service = build('sheets', 'v4', credentials=creds)
@@ -177,8 +153,8 @@ def main() -> None:
         updateMembers(sheet, coming_mon, monIdx)
         updateMembers(sheet, coming_wed, wedIdx)
 
-        MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = SPREADSHEET_NAME + '!' + monIdx + SPREADSHEET_DATA_START + ':' + monIdx
-        MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = SPREADSHEET_NAME + '!' + wedIdx + SPREADSHEET_DATA_START + ':' + wedIdx
+        MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + monIdx + Constants.MASTER_DATA_START + ':' + monIdx
+        MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + wedIdx + Constants.MASTER_DATA_START + ':' + wedIdx
 
         checkAllMembers(sheet, coming_mon, MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE)
         checkAllMembers(sheet, coming_wed, MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE)        

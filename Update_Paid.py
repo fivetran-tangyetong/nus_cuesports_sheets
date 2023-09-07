@@ -80,7 +80,7 @@ def parseColumnByDates(sheet, nextMon) -> (str, str):
         if datetime.datetime.strptime(date, "%d/%m/%Y") == nextMon:
             # + 4 because started from 4th index onwards (Counting from E)
             # + 65 to return capital letter
-            return (chr(idx + 4 + 65), chr(idx + 1 + 4 + 65))
+            return (chr(idx + Constants.MASTER_DATE_START + 65), chr(idx + 1 + Constants.MASTER_DATE_START + 65))
         
     print("Can't find next Monday! " + str(nextMon))
     quit()
