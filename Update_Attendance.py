@@ -154,7 +154,7 @@ def checkAttendanceSheet(sheet, currAttendance, day, coming_list) -> None:
             print("Updated " + coming_telegram_value + " at row " + str(coming_attendance_row))
         
         else:
-            coming_attendance_row = currAttendance_telegram_values.index(coming_telegram_value) + Constants.ATTENDANCE_DATA_START
+            coming_attendance_row = currAttendance_telegram_values.index(coming_telegram_value) + Constants.ATTENDANCE_DATA_START + 1
             coming_attendance_range = Constants.ATTENDANCE_SHEET_NAME + '!' + dateIdx + str(coming_attendance_row)
             coming_attendance_value = '0'
 

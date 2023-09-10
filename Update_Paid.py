@@ -95,7 +95,7 @@ def updateMembersPaid(sheet, paid_list, mon_idx, wed_idx) -> None:
         print('Tracking Sheet Name Empty!')
         quit()
 
-    telegram_values = [i[2].lower() for i in names_values]
+    telegram_values = [i[Constants.MASTER_ID_TELE_LIST].lower().strip() for i in names_values]
     update_list = []
 
     for paid_value in paid_list:
