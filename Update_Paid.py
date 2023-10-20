@@ -1,42 +1,10 @@
 from __future__ import print_function
 
-import os.path
-import datetime
-
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 import Constants
-
-# day: 0 = Monday, 1 = Tuesday, 2 = Wednesday...
-def next_weekday(day):
-    currDate = datetime.date.today()
-    days = (day - currDate.weekday() + 7) % 7
-    return datetime.datetime.strptime(str(currDate + datetime.timedelta(days=days)), "%Y-%m-%d")
-
-
-def auth() -> Credentials:
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists(Constants.TOKEN):
-        creds = Credentials.from_authorized_user_file(Constants.TOKEN, Constants.SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(Constants.CREDENTIALS, Constants.SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open(Constants.TOKEN, 'w') as token:
-            token.write(creds.to_json())
-    
-    return creds
+import utils
 
 
 def getMembersPaid(sheet) -> (list, list):
@@ -66,24 +34,6 @@ def getMembersPaid(sheet) -> (list, list):
         paid_list.append([person_name, person_year, person_tele, person_date])
 
     return paid_list
-
-
-def parseColumnByDates(sheet, nextMon) -> (str, str):
-    dates = sheet.values().get(spreadsheetId=Constants.SPREADSHEET_ID_MASTER, range=Constants.MASTER_DATE_RANGE).execute()
-    dates_values = dates.get('values', [])[0]
-
-    if not dates_values:
-            print('No data found!' + str(nextMon))
-            quit()
-
-    for (idx, date) in enumerate(dates_values):
-        if datetime.datetime.strptime(date, "%d/%m/%Y") == nextMon:
-            # + 4 because started from 4th index onwards (Counting from E)
-            # + 65 to return capital letter
-            return (chr(idx + Constants.MASTER_DATE_START + 65), chr(idx + 1 + Constants.MASTER_DATE_START + 65))
-        
-    print("Can't find next Monday! " + str(nextMon))
-    quit()
 
 
 def updateMembersPaid(sheet, paid_list, mon_idx, wed_idx) -> None:
@@ -138,9 +88,9 @@ def updateMembersPaid(sheet, paid_list, mon_idx, wed_idx) -> None:
 
 
 def main() -> None:
-    creds = auth()
+    creds = utils.auth()
 
-    nextMon = next_weekday(0)
+    nextMon = utils.next_weekday(0)
 
     try:
         service = build('sheets', 'v4', credentials=creds)
@@ -148,7 +98,7 @@ def main() -> None:
         sheet = service.spreadsheets()
 
         paid_list = getMembersPaid(sheet)
-        (monIdx, wedIdx) = parseColumnByDates(sheet, nextMon)
+        (monIdx, wedIdx) = utils.parseColumnByDates(sheet, nextMon)
         
         updateMembersPaid(sheet, paid_list, monIdx, wedIdx)
 
