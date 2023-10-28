@@ -8,26 +8,22 @@ import utils
 
 DISPLAY = """
 ├ linhns
-├ Yap Bing Feng
-├ Jonathan Wee
-├ John Gao Jiahao
-├ bryan
+├ Jarrell Koo
+├ Joshua Tan
+├ tzhenyao
 ├ Feng Yuan
 ├ Eliot
-├ Ang Zhi Tat
-├ Brendan Ng
 ├ Zheng Jie
-├ Arvind
-├ tzhenyao
-├ Non Kittilakkananon
-├ Neo
-├ Opal
-├ An Jo
-├ Jun Hern
-├ Issac
-├ Sean
-├ David
-└ xavier see
+├ hbs
+├ John Gao Jiahao
+├ bryan
+├ Jonathan Wee
+├ Ang Zhi Tat
+├ Hong Tzin
+├ andrew
+├ Shirapthik
+├ Yu Heng
+└ An Jo
 """
 
 def getAllMembers(sheet) -> list:
