@@ -91,6 +91,7 @@ def main() -> None:
     creds = utils.auth()
 
     nextMon = utils.next_weekday(0)
+    nextWed = utils.next_weekday(2)
 
     try:
         service = build('sheets', 'v4', credentials=creds)
@@ -98,7 +99,8 @@ def main() -> None:
         sheet = service.spreadsheets()
 
         paid_list = getMembersPaid(sheet)
-        (monIdx, wedIdx) = utils.parseColumnByDates(sheet, nextMon)
+        monIdx = utils.parseColumnByDate(sheet, nextMon)
+        wedIdx = utils.parseColumnByDate(sheet, nextWed)
         
         updateMembersPaid(sheet, paid_list, monIdx, wedIdx)
 

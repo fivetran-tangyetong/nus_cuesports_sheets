@@ -43,6 +43,24 @@ def processExcelChr(idx) -> str:
     return chr(idx + Constants.MASTER_DATE_START + 65)
 
 
+def parseColumnByDate(sheet, nextDate) -> (str, str):
+    dates = sheet.values().get(spreadsheetId=Constants.SPREADSHEET_ID_MASTER, range=Constants.MASTER_DATE_RANGE).execute()
+    dates_values = dates.get('values', [])[0]
+
+    if not dates_values:
+            print('No data found!' + str(nextDate))
+            quit()
+
+    for (idx, date) in enumerate(dates_values):
+        if datetime.datetime.strptime(date, "%d/%m/%Y") == nextDate:
+            # + 4 because started from 4th index onwards (Counting from E)
+            # + 65 to return capital letter
+            # This only works for F - AZ (BA onwards will not work)
+            return processExcelChr(idx)
+        
+    print("Can't find next Date! " + str(nextDate))
+    return ''
+
 def parseColumnByDates(sheet, nextMon) -> (str, str):
     dates = sheet.values().get(spreadsheetId=Constants.SPREADSHEET_ID_MASTER, range=Constants.MASTER_DATE_RANGE).execute()
     dates_values = dates.get('values', [])[0]

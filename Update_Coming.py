@@ -91,6 +91,7 @@ def main() -> None:
     creds = utils.auth()
 
     nextMon = utils.next_weekday(0)
+    nextWed = utils.next_weekday(2)
 
     coming_mon = getComing(Constants.TELE_MON)
     coming_wed = getComing(Constants.TELE_WED)
@@ -100,16 +101,19 @@ def main() -> None:
         # Call the Sheets API
         sheet = service.spreadsheets()
 
-        (monIdx, wedIdx) = utils.parseColumnByDates(sheet, nextMon)
+        monIdx = utils.parseColumnByDate(sheet, nextMon)
+        wedIdx = utils.parseColumnByDate(sheet, nextWed)
         
-        updateMembers(sheet, coming_mon, monIdx)
-        updateMembers(sheet, coming_wed, wedIdx)
+        if monIdx != '':
+            updateMembers(sheet, coming_mon, monIdx)
+            MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + monIdx + Constants.MASTER_DATA_START + ':' + monIdx
+            checkAllMembers(sheet, coming_mon, MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE)
 
-        MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + monIdx + Constants.MASTER_DATA_START + ':' + monIdx
-        MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + wedIdx + Constants.MASTER_DATA_START + ':' + wedIdx
-
-        checkAllMembers(sheet, coming_mon, MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE)
-        checkAllMembers(sheet, coming_wed, MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE)        
+        if wedIdx != '':
+            updateMembers(sheet, coming_wed, wedIdx)
+            MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + wedIdx + Constants.MASTER_DATA_START + ':' + wedIdx
+            checkAllMembers(sheet, coming_wed, MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE)
+                
 
     except HttpError as err:
         print(err)

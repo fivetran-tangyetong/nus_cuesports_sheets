@@ -47,7 +47,7 @@ def getCurrAttendance(sheet) -> list:
         print('Attendance Sheet Name!')
         quit()
 
-    return currAttendance_values
+    return list(filter(None, currAttendance_values))
 
 
 def checkAttendanceSheet(sheet, currAttendance, day, coming_list) -> None:
@@ -127,28 +127,34 @@ def main() -> None:
     creds = utils.auth()
 
     nextMon = utils.next_weekday(0)
+    nextWed = utils.next_weekday(2)
 
     try:
         service = build('sheets', 'v4', credentials=creds)
         # Call the Sheets API
         sheet = service.spreadsheets()
 
-        (monIdx, wedIdx) = utils.parseColumnByDates(sheet, nextMon)
+        monIdx = utils.parseColumnByDate(sheet, nextMon)
+        wedIdx = utils.parseColumnByDate(sheet, nextWed)
 
-        MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + monIdx + Constants.MASTER_DATA_START + ':' + monIdx
-        MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + wedIdx + Constants.MASTER_DATA_START + ':' + wedIdx
-
-        monNames = getNamesOfComing(sheet, MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE)
-        wedNames = getNamesOfComing(sheet, MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE)
-
-        monNames_filtered = filterComing(sheet, monNames)
-        wedNames_filtered = filterComing(sheet, wedNames)
+        if monIdx != '':
+            MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + monIdx + Constants.MASTER_DATA_START + ':' + monIdx
+            monNames = getNamesOfComing(sheet, MEMBER_TRACKING_SHEET_COMING_MONDAY_RANGE)
+            monNames_filtered = filterComing(sheet, monNames)
+        
+        if wedIdx != '':
+            MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE = Constants.MASTER_SHEET_NAME + '!' + wedIdx + Constants.MASTER_DATA_START + ':' + wedIdx
+            wedNames = getNamesOfComing(sheet, MEMBER_TRACKING_SHEET_COMING_WEDNESDAY_RANGE)
+            wedNames_filtered = filterComing(sheet, wedNames)
 
         currAttendance = getCurrAttendance(sheet)
 
-        currAttendance = checkAttendanceSheet(sheet, currAttendance, str(nextMon.day), monNames_filtered)
-        currAttendance = checkAttendanceSheet(sheet, currAttendance, str(nextMon.day + 2), wedNames_filtered)
-
+        if monIdx != '':
+            currAttendance = checkAttendanceSheet(sheet, currAttendance, str(nextMon.day), monNames_filtered)
+        
+        if wedIdx != '':
+            currAttendance = checkAttendanceSheet(sheet, currAttendance, str(nextWed.day), wedNames_filtered)
+        
         print("Finished! Cleaning up...")
 
     except HttpError as err:

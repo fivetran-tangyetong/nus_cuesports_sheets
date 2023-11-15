@@ -7,23 +7,34 @@ import Constants
 import utils
 
 DISPLAY = """
-├ linhns
-├ Jarrell Koo
-├ Joshua Tan
-├ tzhenyao
-├ Feng Yuan
 ├ Eliot
+├ tzhenyao
+├ Yap Bing Feng
+├ Andy
 ├ Zheng Jie
-├ hbs
+├ David
 ├ John Gao Jiahao
 ├ bryan
+├ Joven Chua
+├ Joshua Tan
+├ Eli
+├ jessie
+├ Jun Hern
 ├ Jonathan Wee
+├ Duc
+├ Marcus Wong
+├ keefe
+├ Neo
 ├ Ang Zhi Tat
-├ Hong Tzin
-├ andrew
-├ Shirapthik
-├ Yu Heng
-└ An Jo
+├ gene
+├ linhns
+├ An Jo
+├ Dominic
+├ Marta
+├ Sze Perng
+├ Yi Long A
+└ Yu Heng
+
 """
 
 def getAllMembers(sheet) -> list:
